@@ -1,28 +1,34 @@
-require('dotenv').config();   // 1. Cargar variables de entorno (.env)
-const express = require('express'); 
+require('dotenv').config();
+const express = require('express');
 const cors = require('cors');
 
 const app = express();
 
-// 2. Middlewares
+// 1) Middlewares
 app.use(cors());
-app.use(express.json());      // Para leer JSON en el body
+app.use(express.json());
 
-// 3. Rutas
+// 2) Rutas de tu API
 const authRouter = require('./routes/auth');
-app.use('/api/auth', authRouter);        // => /api/auth/register, /login, /me
+app.use('/api/auth', authRouter);
 
-// 4. Healthcheck y firma
-app.get('/', (req, res) => res.send('API OK'));
-app.get('/__whoami', (req, res) => res.json({ app: 'node-mysql-crud', pid: process.pid }));
+// 3) Healthchecks (NO tocan DB)
+app.get('/healthz', (_req, res) => res.status(200).send('ok')); // <- para Render
+app.get('/', (_req, res) => res.send('API OK'));
+app.get('/__whoami', (_req, res) => res.json({ app: 'reservas-umg-backend', pid: process.pid }));
 
-// 5. 404 JSON (evita el HTML por defecto)
+// 4) 404 JSON
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found', path: req.originalUrl });
 });
 
-// 6. Levantar servidor
+// 5) Levantar servidor: usar el PORT de Render y bind a 0.0.0.0
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Listening on http://localhost:${PORT}`);
+const HOST = '0.0.0.0';
+const server = app.listen(PORT, HOST, () => {
+  console.log(`Listening on http://${HOST}:${PORT}`);
 });
+
+// (Opcional, mejora wake-up/keep-alive en Render)
+server.keepAliveTimeout = 65000;  // 65s
+server.headersTimeout   = 66000;  // 66s
