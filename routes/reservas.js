@@ -8,7 +8,7 @@ router.get('/', authRequired, async (req, res) => {
   try {
     const [rows] = await pool.query(
       'SELECT r.*, e.titulo, e.lugar FROM reservas r JOIN eventos e ON r.evento_id = e.id WHERE r.usuario_id = ?',
-      [req.user.id]
+      [req.user.sub]
     );
     res.json(rows);
   } catch (err) {
@@ -24,7 +24,7 @@ router.post('/', authRequired, async (req, res) => {
   try {
     const [result] = await pool.query(
       'INSERT INTO reservas (usuario_id, evento_id, cantidad, codigo_confirmacion, estado) VALUES (?, ?, ?, ?, 1)',
-      [req.user.id, evento_id, cantidad, codigo]
+      [req.user.sub, evento_id, cantidad, codigo]
     );
     res.status(201).json({ id: result.insertId, codigo_confirmacion: codigo });
   } catch (err) {
@@ -36,7 +36,7 @@ router.post('/', authRequired, async (req, res) => {
 router.get('/:id', authRequired, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM reservas WHERE id = ? AND usuario_id = ?', [req.params.id, req.user.id]
+      'SELECT * FROM reservas WHERE id = ? AND usuario_id = ?', [req.params.id, req.user.sub]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Reserva no encontrada' });
     res.json(rows[0]);
@@ -49,7 +49,7 @@ router.get('/:id', authRequired, async (req, res) => {
 router.delete('/:id', authRequired, async (req, res) => {
   try {
     const [result] = await pool.query(
-      'DELETE FROM reservas WHERE id=? AND usuario_id=?', [req.params.id, req.user.id]
+      'DELETE FROM reservas WHERE id=? AND usuario_id=?', [req.params.id, req.user.sub]
     );
     res.json({ deleted: result.affectedRows });
   } catch (err) {

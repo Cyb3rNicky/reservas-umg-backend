@@ -22,7 +22,7 @@ router.get('/', authRequired, async (req, res) => {
          JOIN reservas r ON b.reserva_id = r.id
          JOIN eventos e ON b.evento_id = e.id
          WHERE r.usuario_id = ?
-         ORDER BY b.creado_en DESC`, [req.user.id]
+         ORDER BY b.creado_en DESC`, [req.user.sub]
       );
     }
     res.json(rows);

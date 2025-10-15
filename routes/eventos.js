@@ -32,9 +32,11 @@ router.get('/:id', async (req, res) => {
 router.post('/', authRequired, async (req, res) => {
   const { titulo, descripcion, inicia_en, termina_en, lugar, aforo } = req.body;
   try {
+    // El id del usuario autenticado está en req.user.sub
+    const userId = req.user.sub;
     const [result] = await pool.query(
       'INSERT INTO eventos (titulo, descripcion, inicia_en, termina_en, lugar, aforo, estado, creado_por) VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
-      [titulo, descripcion, inicia_en, termina_en, lugar, aforo, req.user.id]
+      [titulo, descripcion, inicia_en, termina_en, lugar, aforo, userId]
     );
     res.status(201).json({ id: result.insertId });
   } catch (err) {
