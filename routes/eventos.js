@@ -38,7 +38,7 @@ router.post('/', authRequired, async (req, res) => {
     );
     res.status(201).json({ id: result.insertId });
   } catch (err) {
-    res.status(500).json({ error: 'Error al crear evento' });
+    res.status(500).json({ error: 'Error al crear evento', detalle: err.message, sql: err.sqlMessage });
   }
 });
 
