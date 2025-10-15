@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { authRequired, requireRole } = require('../middleware/auth');
+const { authRequired } = require('../middleware/auth');
 
 // GET /api/eventos - listado de eventos activos
 router.get('/', async (req, res) => {
@@ -28,8 +28,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST /api/eventos - crear evento (admin/staff)
-router.post('/', authRequired, requireRole('admin', 'staff'), async (req, res) => {
+// POST /api/eventos - crear evento (cualquier usuario autenticado)
+router.post('/', authRequired, async (req, res) => {
   const { titulo, descripcion, inicia_en, termina_en, lugar, aforo } = req.body;
   try {
     const [result] = await pool.query(
@@ -42,8 +42,8 @@ router.post('/', authRequired, requireRole('admin', 'staff'), async (req, res) =
   }
 });
 
-// PUT /api/eventos/:id - editar evento (admin/staff)
-router.put('/:id', authRequired, requireRole('admin', 'staff'), async (req, res) => {
+// PUT /api/eventos/:id - editar evento (cualquier usuario autenticado)
+router.put('/:id', authRequired, async (req, res) => {
   const { titulo, descripcion, inicia_en, termina_en, lugar, aforo, estado } = req.body;
   try {
     const [result] = await pool.query(
@@ -56,8 +56,8 @@ router.put('/:id', authRequired, requireRole('admin', 'staff'), async (req, res)
   }
 });
 
-// DELETE /api/eventos/:id - eliminar evento (admin/staff)
-router.delete('/:id', authRequired, requireRole('admin', 'staff'), async (req, res) => {
+// DELETE /api/eventos/:id - eliminar evento (cualquier usuario autenticado)
+router.delete('/:id', authRequired, async (req, res) => {
   try {
     const [result] = await pool.query('DELETE FROM eventos WHERE id=?', [req.params.id]);
     res.json({ deleted: result.affectedRows });

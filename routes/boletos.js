@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { authRequired, requireRole } = require('../middleware/auth');
+const { authRequired } = require('../middleware/auth');
 
-// GET /api/boletos → Listar boletos del usuario (o todos si es admin)
+// GET /api/boletos → Listar boletos del usuario (o todos si es admin/staff/usuario)
 router.get('/', authRequired, async (req, res) => {
   try {
     let rows;
@@ -69,8 +69,8 @@ router.post('/verificar', async (req, res) => {
   }
 });
 
-// PUT /api/boletos/:id/usar → marcar boleto como usado (por staff en entrada)
-router.put('/:id/usar', authRequired, requireRole('admin', 'staff'), async (req, res) => {
+// PUT /api/boletos/:id/usar → marcar boleto como usado (cualquier usuario autenticado)
+router.put('/:id/usar', authRequired, async (req, res) => {
   try {
     const [result] = await pool.query(
       'UPDATE boletos SET usado = 1, usado_en = NOW() WHERE id = ? AND usado = 0',
