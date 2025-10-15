@@ -15,6 +15,8 @@ const eventosRouter = require('./routes/eventos');
 app.use('/api/eventos', eventosRouter);
 const reservasRouter = require('./routes/reservas');
 app.use('/api/reservas', reservasRouter);
+const boletosRouter = require('./routes/boletos');
+app.use('/api/boletos', boletosRouter);
 
 
 // 4. Healthcheck y firma
