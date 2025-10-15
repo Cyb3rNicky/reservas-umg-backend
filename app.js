@@ -11,6 +11,11 @@ app.use(express.json());      // Para leer JSON en el body
 // 3. Rutas
 const authRouter = require('./routes/auth');
 app.use('/api/auth', authRouter);        // => /api/auth/register, /login, /me
+const eventosRouter = require('./routes/eventos');
+app.use('/api/eventos', eventosRouter);
+const reservasRouter = require('./routes/reservas');
+app.use('/api/reservas', reservasRouter);
+
 
 // 4. Healthcheck y firma
 app.get('/', (req, res) => res.send('API OK'));
