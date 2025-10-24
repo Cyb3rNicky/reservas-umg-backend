@@ -1,12 +1,12 @@
 services:
-  # === WEB SERVICE (API PRINCIPAL) ===
+  # === WEB SERVICE (API) ===
   - type: web
     name: reservas-umg-api
     env: node
     buildCommand: "npm install"
     startCommand: "node app.js"
-    envVarGroups:
-      - reservas-umg-env  # Grupo compartido de variables
+    envVars:
+      - fromGroup: reservas-umg-env
 
   # === WORKER: GENERADOR DE PDF ===
   - type: worker
@@ -14,14 +14,14 @@ services:
     env: node
     buildCommand: "npm install"
     startCommand: "node workers/pdfWorker.js"
-    envVarGroups:
-      - reservas-umg-env
+    envVars:
+      - fromGroup: reservas-umg-env
 
-  # === WORKER: ENVÍO DE CORREOS ===
+  # === WORKER: ENVÍO DE EMAILS ===
   - type: worker
     name: reservas-umg-email-worker
     env: node
     buildCommand: "npm install"
     startCommand: "node workers/emailWorker.js"
-    envVarGroups:
-      - reservas-umg-env
+    envVars:
+      - fromGroup: reservas-umg-env
