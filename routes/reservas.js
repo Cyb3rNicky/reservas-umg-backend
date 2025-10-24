@@ -2,8 +2,11 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { authRequired } = require('../middleware/auth');
+const { publishSafe, QUEUES } = require('../queue'); // <-- SOLO esta importación
+const { logJob } = require('../bitacora');
+const crypto = require('crypto');
 
-// GET /api/reservas - reservas del usuario autenticado
+// GET /api/reservas
 router.get('/', authRequired, async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -19,20 +22,69 @@ router.get('/', authRequired, async (req, res) => {
 // POST /api/reservas - crear reserva
 router.post('/', authRequired, async (req, res) => {
   const { evento_id, cantidad } = req.body;
-  // Genera un código de confirmación sencillo
+  const cant = Math.max(1, Math.min(Number(cantidad || 1), 10));
   const codigo = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+  const conn = await pool.getConnection();
   try {
-    const [result] = await pool.query(
+    await conn.beginTransaction();
+
+    // Crear reserva
+    const [r] = await conn.query(
       'INSERT INTO reservas (usuario_id, evento_id, cantidad, codigo_confirmacion, estado) VALUES (?, ?, ?, ?, 1)',
-      [req.user.sub, evento_id, cantidad, codigo]
+      [req.user.sub, evento_id, cant, codigo]
     );
-    res.status(201).json({ id: result.insertId, codigo_confirmacion: codigo });
+    const reservaId = r.insertId;
+
+    // Crear boletos
+    const [evRows] = await conn.query('SELECT titulo FROM eventos WHERE id=?', [evento_id]);
+    const eventoTitulo = evRows[0]?.titulo || '';
+
+    const codigos = [];
+    for (let i = 0; i < cant; i++) {
+      const code = crypto.randomUUID();
+      const qr_payload = `https://miapp.local/boletos/${code}`;
+      await conn.query(
+        'INSERT INTO boletos (reserva_id, evento_id, codigo, qr_payload, usado) VALUES (?, ?, ?, ?, 0)',
+        [reservaId, evento_id, code, qr_payload]
+      );
+      codigos.push({ codigo: code, qr_payload });
+    }
+
+    await conn.commit();
+
+    // Publicar trabajos en colas
+    const [uRows] = await pool.query('SELECT email, nombre FROM usuarios WHERE id=?', [req.user.sub]);
+    const destinatario = uRows[0]?.email;
+
+    const pdfMsg = { reserva_id: reservaId, evento_id, usuario_id: req.user.sub, codigos, eventoTitulo };
+    const emailMsg = { reserva_id: reservaId, to: destinatario, codigo_confirmacion: codigo };
+
+    // bitácora "en cola"
+    await logJob({ tipo: 'pdf', ref_id: reservaId, payload_json: pdfMsg });
+    await logJob({ tipo: 'email', ref_id: reservaId, payload_json: emailMsg });
+
+    // publicar (no rompe request si falla)
+    const okPdf   = await publishSafe(QUEUES.PDF, pdfMsg);
+    const okEmail = destinatario ? await publishSafe(QUEUES.EMAIL, emailMsg) : true;
+
+    if (!okPdf)
+      await logJob({ tipo: 'pdf', ref_id: reservaId, payload_json: pdfMsg, error_mensaje: 'Fallo al publicar en cola', incIntentos: true });
+    if (!okEmail)
+      await logJob({ tipo: 'email', ref_id: reservaId, payload_json: emailMsg, error_mensaje: 'Fallo al publicar en cola', incIntentos: true });
+
+    return res.status(201).json({ id: reservaId, codigo_confirmacion: codigo });
+
   } catch (err) {
+    try { await conn.rollback(); } catch {}
+    console.error('Error en POST /api/reservas:', err);
     res.status(500).json({ error: 'Error al crear reserva' });
+  } finally {
+    conn.release();
   }
 });
 
-// GET /api/reservas/:id - ver reserva (solo propietario)
+// GET /api/reservas/:id
 router.get('/:id', authRequired, async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -45,7 +97,7 @@ router.get('/:id', authRequired, async (req, res) => {
   }
 });
 
-// DELETE /api/reservas/:id - cancelar reserva (solo propietario)
+// DELETE /api/reservas/:id
 router.delete('/:id', authRequired, async (req, res) => {
   try {
     const [result] = await pool.query(
