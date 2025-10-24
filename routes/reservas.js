@@ -43,7 +43,7 @@ router.post('/', authRequired, async (req, res) => {
     const codigos = [];
     for (let i = 0; i < cant; i++) {
       const code = crypto.randomUUID();
-      const qr_payload = `https://miapp.local/boletos/${code}`;
+      const qr_payload = `https://reservas-umg.netlify.app/boletos/${code}`;
       await conn.query(
         'INSERT INTO boletos (reserva_id, evento_id, codigo, qr_payload, usado) VALUES (?, ?, ?, ?, 0)',
         [reservaId, evento_id, code, qr_payload]
