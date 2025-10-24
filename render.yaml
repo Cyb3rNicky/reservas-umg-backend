@@ -1,88 +1,27 @@
 services:
+  # === WEB SERVICE (API PRINCIPAL) ===
   - type: web
     name: reservas-umg-api
     env: node
-    rootDir: reservas-umg-backend
     buildCommand: "npm install"
     startCommand: "node app.js"
-    envVars:
-      - key: RABBIT_URL
-        sync: false
-      - key: DB_HOST
-        sync: false
-      - key: DB_PORT
-        sync: false
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
-      - key: DB_NAME
-        sync: false
-      - key: DB_SSL
-        sync: false
-      - key: JWT_SECRET
-        sync: false
-      - key: JWT_EXPIRES
-        sync: false
-      - key: BCRYPT_ROUNDS
-        sync: false
-      - key: MAILTRAP_HOST
-        sync: false
-      - key: MAILTRAP_PORT
-        sync: false
-      - key: MAILTRAP_USER
-        sync: false
-      - key: MAILTRAP_PASS
-        sync: false
+    envVarGroups:
+      - reservas-umg-env  # Grupo compartido de variables
 
+  # === WORKER: GENERADOR DE PDF ===
   - type: worker
     name: reservas-umg-pdf-worker
     env: node
-    rootDir: reservas-umg-backend
     buildCommand: "npm install"
     startCommand: "node workers/pdfWorker.js"
-    envVars:
-      - key: RABBIT_URL
-        sync: false
-      - key: DB_HOST
-        sync: false
-      - key: DB_PORT
-        sync: false
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
-      - key: DB_NAME
-        sync: false
-      - key: DB_SSL
-        sync: false
+    envVarGroups:
+      - reservas-umg-env
 
+  # === WORKER: ENVÍO DE CORREOS ===
   - type: worker
     name: reservas-umg-email-worker
     env: node
-    rootDir: reservas-umg-backend
     buildCommand: "npm install"
     startCommand: "node workers/emailWorker.js"
-    envVars:
-      - key: RABBIT_URL
-        sync: false
-      - key: DB_HOST
-        sync: false
-      - key: DB_PORT
-        sync: false
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
-      - key: DB_NAME
-        sync: false
-      - key: DB_SSL
-        sync: false
-      - key: MAILTRAP_HOST
-        sync: false
-      - key: MAILTRAP_PORT
-        sync: false
-      - key: MAILTRAP_USER
-        sync: false
-      - key: MAILTRAP_PASS
-        sync: false
+    envVarGroups:
+      - reservas-umg-env
